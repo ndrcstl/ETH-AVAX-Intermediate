@@ -1,32 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract RequireAssertRevert {
+contract Auction {
     address private owner;
-    uint public balance;
+    uint public highestBid;
+    address public highestBidder;
+    bool public auctionEnded;
 
     constructor() {
         owner = msg.sender;
-        balance = 0;
+        highestBid = 0;
+        auctionEnded = false;
     }
 
-    function deposit(uint _amount) public {
-        require(msg.sender == owner, "Only the owner can deposit funds");
-        balance += _amount;
+    function bid(uint _amount) public {
+        require(!auctionEnded, "Auction has already ended");
+        require(msg.sender != owner, "Owner cannot bid");
+        require(_amount > highestBid, "Bid must be higher than the current highest bid");
+
+        highestBid = _amount;
+        highestBidder = msg.sender;
     }
 
-    function withdraw(uint _amount) public {
-        assert(balance >= _amount);
-        balance -= _amount;
+    function endAuction() public {
+        require(msg.sender == owner, "Only the owner can end the auction");
+        require(!auctionEnded, "Auction has already ended");
+
+        auctionEnded = true;
     }
 
-    function transfer(address _recipient, uint _amount) public {
-        require(_recipient!= address(0), "Invalid recipient address");
-        require(balance >= _amount, "Insufficient balance");
-        balance -= _amount;
-        (bool success, ) = _recipient.call{value: _amount}("");
-        if (!success) {
-            revert("Transfer failed");
-        }
+    function getHighestBid() public view returns (uint) {
+        return highestBid;
+    }
+
+    function getHighestBidder() public view returns (address) {
+        return highestBidder;
     }
 }
